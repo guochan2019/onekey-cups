@@ -230,7 +230,7 @@ CUPSD
   echo "  Windows IPP     : http://<LXC-IP>:631/printers/P1008"
   echo "  iPhone          : AirPrint 自动发现 P1008"
   echo "  Android         : Mopria 手动 IPP 同上"
-  echo "  固件自动加载    : 容器启动检查 FWVER, 断电重开自动补载"
+  echo "  固件自动加载    : 常驻守护每30秒检查, 打印机开机后自动补载"
   echo "  打印机故障排查  : docker exec print-server lpstat -p"
   echo "==================================="
   exit 0

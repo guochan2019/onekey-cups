@@ -77,12 +77,12 @@ bash onekey-cups.sh 210
 脚本自动完成：
 
 ```
-检测打印机在线(PVE lsusb) → 检查 LXC 内打印机可见(直通已正确)
+检测打印机在线(PVE lsusb) → 检查 LXC 内打印机可见(直通已正确, 缺 usbutils 自动装)
 → 重启 LXC → pct push 脚本进 LXC → pct exec 执行部署
 → 创建 4 文件(Dockerfile/compose/entrypoint/cupsd.conf)
 → docker compose build(固件+PPD 构建时下载)
-→ 启动 → 等打印机 → FWVER 检查(有则跳过/无则加载固件)
-→ 建队列 P1008 → 设管理密码 → avahi → cupsd
+→ 启动 → 等打印机 → 固件检查(不在线跳过) → 建队列(固定URI)
+→ 凭据/dbus → avahi → cupsd → 固件守护进程(每30秒, 开机后自动补载)
 ```
 
 ## 客户端连接
@@ -125,7 +125,7 @@ docker exec print-server tail -40 /var/log/cups/error_log       # 错误日志
 /mnt/nvme1/appdata/cups/
 ├── Dockerfile          # debian:13-slim + cups + printer-driver-foo2zjs + 固件 + PPD
 ├── docker-compose.yml  # host 网络 + privileged(USB cgroup) + /dev/bus/usb 挂载
-├── entrypoint.sh       # 等打印机 → 固件检查加载 → 建队列 → avahi → cupsd
+├── entrypoint.sh       # 等打印机 → 固件检查(离线跳过) → 建队列 → dbus/avahi → cupsd + 固件守护
 └── cupsd.conf          # 局域网匿名打印(AuthType None) + AirPrint
 ```
 
@@ -135,7 +135,11 @@ docker exec print-server tail -40 /var/log/cups/error_log       # 错误日志
 2. Debian 的 foo2zjs 包用 pyppd 归档 PPD → 从 OpenPrinting 下载原始 `HP-LaserJet_P1008.ppd`
 3. P1008 固件 = `sihpP1006.dl`（与 P1006 共用），源 `https://quirinux.org/printers/sihpP1006.tar.gz`
 4. Debian 包无 hpljP1008 脚本 → 固件加载自写（CUPS usb backend + DEVICE_URI）
-5. 容器无 udev → entrypoint 每次启动检查 FWVER 决定是否加载固件
-6. `/run/dbus` 目录不存在 → entrypoint 先 mkdir
-7. CUPS 2.4 默认 Basic 认证 → 打印 Limit 段 `AuthType None` + `Allow all`
-8. AirPrint 需要 avahi 多播 → `network_mode: host`（ports 映射会失效）
+5. 容器无 udev → 固件加载靠 entrypoint 检查 + 常驻守护（每 30 秒查 FWVER）
+6. `/run/dbus` 目录不存在 → entrypoint 先 `mkdir -p /run/dbus`
+7. **`/run/dbus/pid` 残留 → dbus 拒绝启动 → 容器重启死循环** → dbus 前 `rm -f /run/dbus/pid /run/dbus/system_bus_socket`
+8. CUPS 2.4 默认 Basic 认证 → 打印 Limit 段 `AuthType None` + `Allow all`
+9. AirPrint 需要 avahi 多播 → `network_mode: host`（ports 映射会失效）
+10. `pct set --dev0` 与手动整总线直通冲突 → LXC 启动失败（autodev hooks）→ 直通统一用手动 conf 配置
+11. LXC 缺 usbutils → 检查误报"未检测到打印机" → 脚本自动安装（幂等）
+12. 打印机平时关机 → 启动时固件加载跳过（不再崩溃循环），开机后守护 30-60 秒自动补载
