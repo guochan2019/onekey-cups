@@ -26,17 +26,42 @@ PVE Web UI 操作：
 
 ### 第 1 步：手动直通 USB 打印机
 
-PVE Web UI 操作：
+**① 宿主机确认 USB 打印机**（PVE 上执行）：
 
-1. 打印机 USB 线连接 **PVE 宿主机**（不是 LXC），PVE 上确认可见：`lsusb`（需已装 `usbutils`）应看到 `ID 03f0:4917 HP ... LaserJet P1008`
-2. PVE Web UI → 选中 LXC（210）→ **Resources** → **Add** → **USB device** → 选择 **HP LaserJet P1008**（或用 Vendor/Product ID `03f0:4917`）→ Add
-3. 添加后容器会自动重启生效（或手动 `pct reboot 210`），验证直通成功：
-   ```bash
-   pct enter 210
-   lsusb    # 应看到: Bus ... ID 03f0:4917 HP LaserJet P1008
-   ```
+```bash
+lsusb
+```
 
-> 手动添加比脚本自动配置更保险：设备号漂移时只需在 Web UI 重新添加一次，且不会与已有直通配置冲突。
+输出示例：
+
+```
+Bus 003 Device 006: ID 03f0:3d17 Hewlett-Packard LaserJet P1008
+```
+
+记下 **Bus 号**（例如 `003`，以下配置用 `003` 示例，按实际替换）。
+
+**② 配置 LXC 容器 USB 直通**（PVE 上执行）：
+
+```bash
+nano /etc/pve/lxc/<CTID>.conf
+```
+
+在文件末尾加入：
+
+```conf
+lxc.cgroup2.devices.allow: c 189:* rwm
+lxc.mount.entry: /dev/bus/usb/003 dev/bus/usb/003 none bind,optional,create=dir
+```
+
+> 直通的是整条 **USB 总线目录**（`/dev/bus/usb/003`），不是单个设备——设备号漂移（如 `006→004`）无需改配置，只要插在同一 Bus 上即可。
+
+**③ 重启 LXC 生效并验证**：
+
+```bash
+pct reboot <CTID>
+pct enter <CTID>
+lsusb    # 应看到: Bus 003 Device ...: ID 03f0:4917 HP, Inc HP LaserJet P1008
+```
 
 ### 第 2 步：一键部署
 
