@@ -4,7 +4,11 @@
 
 ## 快速开始
 
-前提：已新建 LXC（Debian 13）并安装 Docker，打印机 USB 线连接 PVE 宿主机。
+前提（3 步，USB 直通手动）：
+
+1. 已新建 LXC（Debian 13）并安装 Docker
+2. 打印机 USB 线连接 PVE 宿主机
+3. **PVE Web UI 手动直通 USB**：选中 LXC → Resources → Add → USB device → 选择 HP LaserJet P1008（手动添加更保险，脚本不自动配置直通）
 
 ```bash
 # 下载脚本到 PVE 宿主（注意：不支持 wget 管道方式，脚本需自我复制到 LXC）
@@ -18,8 +22,8 @@ bash onekey-cups.sh 210
 脚本自动完成：
 
 ```
-检测打印机(lsusb 自动解析设备号) → pct set 直通 USB → 重启 LXC
-→ pct push 脚本进 LXC → pct exec 执行部署
+检测打印机在线(PVE lsusb) → 检查 LXC 内打印机可见(直通已正确)
+→ 重启 LXC → pct push 脚本进 LXC → pct exec 执行部署
 → 创建 4 文件(Dockerfile/compose/entrypoint/cupsd.conf)
 → docker compose build(固件+PPD 构建时下载)
 → 启动 → 等打印机 → FWVER 检查(有则跳过/无则加载固件)

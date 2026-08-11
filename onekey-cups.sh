@@ -2,10 +2,11 @@
 # ============================================================
 # onekey-cups — HP LaserJet P1008 打印服务器一键部署
 # 适用环境: PVE 宿主 + LXC(Debian 13) + Docker
-# 功能: USB 直通 → LXC 部署 CUPS 容器(自动固件加载) → 建立打印队列
+# 功能: 检测打印机直通 → LXC 部署 CUPS 容器(自动固件加载) → 建立打印队列
 # 用法: bash onekey-cups.sh <CTID>
 #   例: bash onekey-cups.sh 210
-# 前提: 已新建 LXC(Debian 13) 并安装 Docker; 打印机 USB 连接 PVE
+# 前提: 已新建 LXC(Debian 13) 并安装 Docker; 已在 PVE Web UI 手动直通 USB 打印机
+#      (LXC → Resources → Add → USB device → HP LaserJet P1008); 打印机 USB 连接 PVE
 # ============================================================
 set -euo pipefail
 
@@ -233,13 +234,12 @@ lsusb | grep -i 'LaserJet P1008' || err "未检测到 HP LaserJet P1008, 请检�
 BUSDEV=$(lsusb | grep -i 'LaserJet P1008' | grep -oE 'Bus [0-9]+ Device [0-9]+' | awk '{print $2"/"$4}')
 info "打印机位于: /dev/bus/usb/$BUSDEV"
 
-info "检查 LXC $CTID 现有 USB 直通配置"
-if grep -qE 'lxc\.mount\.entry: .*bus/usb' /etc/pve/lxc/$CTID.conf 2>/dev/null; then
-  info "LXC $CTID 已有 USB 直通配置（/dev/bus/usb），跳过 pct set --dev0，避免重复挂载冲突"
-else
-  info "直通 USB 到 LXC $CTID: /dev/bus/usb/$BUSDEV"
-  pct set "$CTID" --dev0 "path=/dev/bus/usb/$BUSDEV"
-fi
+info "检查 LXC $CTID 内是否已直通 USB 打印机 (需先在 PVE Web UI 手动添加)"
+pct exec "$CTID" -- lsusb 2>/dev/null | grep -qi 'LaserJet P1008' || err "LXC $CTID 内未检测到打印机。请先手动直通:
+  1) 确认 LXC $CTID 已启动
+  2) PVE Web UI → 选中 LXC $CTID → Resources → Add → USB device → 选择 HP LaserJet P1008
+  3) 打印机已通电并连接 PVE USB 口
+  完成后重新运行本脚本"
 
 info "重启 LXC $CTID (容器自动恢复)"
 pct reboot "$CTID"
