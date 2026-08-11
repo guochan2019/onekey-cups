@@ -120,6 +120,7 @@ sleep 1
 echo "[5/5] 管理凭据 + 打印发现服务"
 echo 'root:cupsadmin' | chpasswd
 mkdir -p /run/dbus
+rm -f /run/dbus/pid /run/dbus/system_bus_socket
 dbus-daemon --system
 avahi-daemon -D --no-drop-root
 
