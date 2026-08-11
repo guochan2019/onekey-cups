@@ -114,7 +114,7 @@ docker exec print-server tail -40 /var/log/cups/error_log       # 错误日志
 ## 日常维护
 
 - 打印机断电/重插：无需操作，容器启动自动检查 FWVER 并补载固件
-- USB 设备号变化：重跑 `bash onekey-cups.sh <CTID>`（脚本自动解析新设备号）
+- USB 设备号变化：整总线直通（`create=dir`）下 device 号漂移无需处理；**换了 USB 口（Bus 变化）**才需改 conf 的 `lxc.mount.entry` Bus 号并 `pct reboot <CTID>`
 - 换打印机型号：改 Dockerfile 固件下载段（型号与 P1006 共用的映射见 getweb.in）+ PPD 文件名
 
 ## 部署产物
