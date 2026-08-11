@@ -101,16 +101,19 @@ if /usr/lib/cups/backend/usb 2>&1 | grep -q 'FWVER:'; then
     echo "固件已加载（FWVER 存在），跳过"
 else
     URI=$(/usr/lib/cups/backend/usb 2>/dev/null | grep -i 'HP.*LaserJet.*P1008' | cut -d' ' -f2 | head -1)
-    echo "加载固件: $FW -> $URI"
-    DEVICE_URI="$URI" /usr/lib/cups/backend/usb 1 1 1 1 '' "$FW"
-    sleep 3
+    if [ -n "$URI" ]; then
+        echo "加载固件: $FW -> $URI"
+        DEVICE_URI="$URI" /usr/lib/cups/backend/usb 1 1 1 1 '' "$FW"
+        sleep 3
+    else
+        echo "打印机不在线，跳过固件加载（开机后由守护进程自动补载）"
+    fi
 fi
 
 echo "[4/5] CUPS 启动 + 队列配置"
 cupsd
 sleep 2
-URI=$(/usr/lib/cups/backend/usb 2>/dev/null | grep -i 'HP.*LaserJet.*P1008' | cut -d' ' -f2 | head -1)
-lpadmin -p P1008 -E -v "$URI" -P /usr/share/cups/model/HP-LaserJet_P1008.ppd
+lpadmin -p P1008 -E -v 'usb://HP/LaserJet%20P1008?serial=DC02SAG' -P /usr/share/cups/model/HP-LaserJet_P1008.ppd
 lpadmin -p P1008 -o printer-is-shared=true
 cupsenable P1008
 cupsaccept P1008
@@ -123,6 +126,18 @@ mkdir -p /run/dbus
 rm -f /run/dbus/pid /run/dbus/system_bus_socket
 dbus-daemon --system
 avahi-daemon -D --no-drop-root
+
+echo "[6/5] 固件守护进程（打印机开机后自动补载固件）"
+( while true; do
+    if ! /usr/lib/cups/backend/usb 2>&1 | grep -q 'FWVER:'; then
+        URI=$(/usr/lib/cups/backend/usb 2>/dev/null | grep -i 'HP.*LaserJet.*P1008' | cut -d' ' -f2 | head -1)
+        if [ -n "$URI" ]; then
+            DEVICE_URI="$URI" /usr/lib/cups/backend/usb 1 1 1 1 '' "$FW"
+            sleep 3
+        fi
+    fi
+    sleep 30
+done ) &
 
 exec cupsd -f
 ENTRYPOINT
