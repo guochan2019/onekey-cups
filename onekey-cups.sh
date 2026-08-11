@@ -201,7 +201,11 @@ CUPSD
   info "构建并启动容器"
   docker compose up -d --build
 
-  info "验证打印队列"
+  info "等待 CUPS 就绪并验证打印队列"
+  for i in $(seq 1 30); do
+      docker exec print-server lpstat -p 2>/dev/null | grep -q 'P1008' && break
+      sleep 2
+  done
   docker exec print-server lpstat -p
 
   echo ""
@@ -235,7 +239,7 @@ BUSDEV=$(lsusb | grep -i 'LaserJet P1008' | grep -oE 'Bus [0-9]+ Device [0-9]+' 
 info "打印机位于: /dev/bus/usb/$BUSDEV"
 
 info "检查 LXC $CTID 内是否已直通 USB 打印机 (手动直通方法见 README 第 1 步)"
-pct exec "$CTID" -- apt-get install -y -qq usbutils >/dev/null
+pct exec "$CTID" -- env LC_ALL=C apt-get install -y -qq usbutils >/dev/null
 pct exec "$CTID" -- lsusb | grep -qi 'LaserJet P1008' || err "LXC $CTID 内未检测到打印机。请先手动直通 (README 第 1 步):
   1) PVE 执行 lsusb 记下 Bus 号 (如 003)
   2) 编辑 /etc/pve/lxc/$CTID.conf 末尾加入:
