@@ -4,11 +4,41 @@
 
 ## 快速开始
 
-前提（3 步，USB 直通手动）：
+### 第 0 步：手动创建 LXC（Debian 13）
 
-1. 已新建 LXC（Debian 13）并安装 Docker
-2. 打印机 USB 线连接 PVE 宿主机
-3. **PVE Web UI 手动直通 USB**：选中 LXC → Resources → Add → USB device → 选择 HP LaserJet P1008（手动添加更保险，脚本不自动配置直通）
+PVE Web UI 操作：
+
+1. **下载模板**：选中 PVE 节点 → `local` 存储 → `CT Templates` → `Templates` → 选 `debian-13-standard_13.x-1_amd64.tar.zst` → `Download`（列表里没有就先点 `Update` 刷新）
+2. **创建容器**：右上角 `Create CT`
+   - **General**：CT ID（如 210）、Hostname（如 Serv-Docker）、设置 root 密码（或粘贴 SSH 公钥）
+   - **Template**：选中刚下载的 Debian 13 模板
+   - **Disks**：rootfs ≥ 16GB（Docker 镜像占空间）
+   - **CPU**：2 核足够（打印服务负载低）
+   - **Memory**：≥ 1GB（建议 2GB）
+   - **Network**：桥接 `vmbr0`，静态 IP（如 `192.168.50.20/24`）、网关 `192.168.50.2`、DNS `192.168.50.2`
+   - 其余默认 → `Finish`
+3. **启动并安装 Docker**（在 PVE 上执行）：
+   ```bash
+   pct start 210
+   pct enter 210
+   apt update && apt install -y docker.io docker-compose-plugin
+   ```
+
+### 第 1 步：手动直通 USB 打印机
+
+PVE Web UI 操作：
+
+1. 打印机 USB 线连接 **PVE 宿主机**（不是 LXC），PVE 上确认可见：`lsusb`（需已装 `usbutils`）应看到 `ID 03f0:4917 HP ... LaserJet P1008`
+2. PVE Web UI → 选中 LXC（210）→ **Resources** → **Add** → **USB device** → 选择 **HP LaserJet P1008**（或用 Vendor/Product ID `03f0:4917`）→ Add
+3. 添加后容器会自动重启生效（或手动 `pct reboot 210`），验证直通成功：
+   ```bash
+   pct enter 210
+   lsusb    # 应看到: Bus ... ID 03f0:4917 HP LaserJet P1008
+   ```
+
+> 手动添加比脚本自动配置更保险：设备号漂移时只需在 Web UI 重新添加一次，且不会与已有直通配置冲突。
+
+### 第 2 步：一键部署
 
 ```bash
 # 下载脚本到 PVE 宿主（注意：不支持 wget 管道方式，脚本需自我复制到 LXC）
