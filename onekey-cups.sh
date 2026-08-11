@@ -233,8 +233,13 @@ lsusb | grep -i 'LaserJet P1008' || err "未检测到 HP LaserJet P1008, 请检�
 BUSDEV=$(lsusb | grep -i 'LaserJet P1008' | grep -oE 'Bus [0-9]+ Device [0-9]+' | awk '{print $2"/"$4}')
 info "打印机位于: /dev/bus/usb/$BUSDEV"
 
-info "直通 USB 到 LXC $CTID"
-pct set "$CTID" --dev0 "path=/dev/bus/usb/$BUSDEV"
+info "检查 LXC $CTID 现有 USB 直通配置"
+if grep -qE 'lxc\.mount\.entry: .*bus/usb' /etc/pve/lxc/$CTID.conf 2>/dev/null; then
+  info "LXC $CTID 已有 USB 直通配置（/dev/bus/usb），跳过 pct set --dev0，避免重复挂载冲突"
+else
+  info "直通 USB 到 LXC $CTID: /dev/bus/usb/$BUSDEV"
+  pct set "$CTID" --dev0 "path=/dev/bus/usb/$BUSDEV"
+fi
 
 info "重启 LXC $CTID (容器自动恢复)"
 pct reboot "$CTID"
