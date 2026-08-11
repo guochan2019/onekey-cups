@@ -33,7 +33,15 @@ bash onekey-cups.sh 210
 | Windows | 添加打印机 → IPP → `http://<LXC-IP>:631/printers/P1008` → 驱动 HP LaserJet P1008 |
 | iPhone | AirPrint 自动发现 P1008 |
 | Android | Mopria → 手动 IPP → `http://<LXC-IP>:631/printers/P1008` |
-| Web 管理 | `http://<LXC-IP>:631` → root / cupsadmin |
+| Web 管理 | `http://<LXC-IP>:631` → 用户名 `root`，密码 `cupsadmin` |
+
+## Web 管理界面
+
+- 地址：`http://<LXC-IP>:631`（如 `http://192.168.50.20:631`）
+- 用户名：`root`
+- 密码：`cupsadmin`
+
+> 打印共享本身匿名即可，无需登录；登录仅用于管理界面（添加/删除打印机、改配置）。
 
 ## 验证命令
 
