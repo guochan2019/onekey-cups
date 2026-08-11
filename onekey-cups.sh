@@ -220,9 +220,9 @@ fi
 # ============================================================
 CTID="${1:?用法: bash onekey-cups.sh <CTID>}"
 
-read -p "部署目录 (默认 /mnt/nvme1/appdata/cups): " INSTALL_DIR </dev/tty
+read -p "LXC 内部署目录 (默认 /mnt/nvme1/appdata/cups): " INSTALL_DIR </dev/tty
 INSTALL_DIR="${INSTALL_DIR:-/mnt/nvme1/appdata/cups}"
-info "部署目录: $INSTALL_DIR"
+info "将在 LXC $CTID 内创建部署目录: $INSTALL_DIR (PVE 宿主机不受影响)"
 
 # 脚本需自我复制到 LXC，必须文件方式运行（不支持 wget 管道）
 SCRIPT=$(readlink -f "$0")
