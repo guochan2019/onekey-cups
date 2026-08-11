@@ -60,6 +60,8 @@ docker exec print-server tail -40 /var/log/cups/error_log       # 错误日志
 
 ## 部署产物
 
+> 默认部署目录为 `/mnt/nvme1/appdata/cups`，脚本执行时会提示输入，**直接回车使用默认值**。
+
 ```
 /mnt/nvme1/appdata/cups/
 ├── Dockerfile          # debian:13-slim + cups + printer-driver-foo2zjs + 固件 + PPD

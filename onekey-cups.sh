@@ -34,7 +34,7 @@ if [ "${1:-}" = "lxc" ]; then
   info "等待 Docker 就绪"
   until docker info >/dev/null 2>&1; do sleep 2; done
 
-  DIR=/mnt/nvme1/appdata/cups
+  DIR="${2:-/mnt/nvme1/appdata/cups}"
   info "部署目录: $DIR"
   mkdir -p "$DIR"
   cd "$DIR"
@@ -220,6 +220,10 @@ fi
 # ============================================================
 CTID="${1:?用法: bash onekey-cups.sh <CTID>}"
 
+read -p "部署目录 (默认 /mnt/nvme1/appdata/cups): " INSTALL_DIR </dev/tty
+INSTALL_DIR="${INSTALL_DIR:-/mnt/nvme1/appdata/cups}"
+info "部署目录: $INSTALL_DIR"
+
 # 脚本需自我复制到 LXC，必须文件方式运行（不支持 wget 管道）
 SCRIPT=$(readlink -f "$0")
 [ "$(basename "$SCRIPT")" = "onekey-cups.sh" ] || err "请下载脚本到本地文件后执行（脚本需自我复制到 LXC，不支持管道方式）"
@@ -238,7 +242,7 @@ sleep 15
 
 info "推送脚本到 LXC 并执行部署"
 pct push "$CTID" "$SCRIPT" /root/onekey-cups.sh
-pct exec "$CTID" -- bash /root/onekey-cups.sh lxc
+pct exec "$CTID" -- bash /root/onekey-cups.sh lxc "$INSTALL_DIR"
 
 echo ""
 info "全部完成!"
