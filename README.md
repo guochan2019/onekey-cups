@@ -70,8 +70,8 @@ lsusb    # 应看到: Bus 003 Device ...: ID 03f0:4917 HP, Inc HP LaserJet P1008
 wget https://raw.githubusercontent.com/guochan2019/onekey-cups/main/onekey-cups.sh
 chmod +x onekey-cups.sh
 
-# 一键部署（<CTID> 换成 LXC 容器号，如 210）
-bash onekey-cups.sh 210
+# 一键部署（运行后交互输入 CTID，必填无默认值；再交互输入部署目录）
+bash onekey-cups.sh
 ```
 
 脚本自动完成：

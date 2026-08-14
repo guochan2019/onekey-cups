@@ -3,8 +3,8 @@
 # onekey-cups — HP LaserJet P1008 打印服务器一键部署
 # 适用环境: PVE 宿主 + LXC(Debian 13) + Docker
 # 功能: 检测打印机直通 → LXC 部署 CUPS 容器(自动固件加载) → 建立打印队列
-# 用法: bash onekey-cups.sh <CTID>
-#   例: bash onekey-cups.sh 210
+# 用法: bash onekey-cups.sh
+#   运行后交互输入容器 ID (CTID，必填，无默认值)
 # 前提: 已新建 LXC(Debian 13) 并安装 Docker; 已手动直通 USB 打印机
 #      (编辑 /etc/pve/lxc/<CTID>.conf 加 cgroup 189:* + bus mount entry, 见 README 第1步)
 # ============================================================
@@ -15,7 +15,7 @@ trap 'echo -e "\033[0;31m[ERROR] 脚本执行失败，请检查:\033[0m
   - 打印机是否通电并连接 PVE 的 USB 口
   - LXC 网络（需可访问 docker.io / quirinux.org / raw.githubusercontent.com）
   - 是否以 root 运行
-  - 尝试: bash -x onekey-cups.sh <CTID>" >&2' ERR
+  - 尝试: bash -x onekey-cups.sh" >&2' ERR
 
 # ---------- 彩色输出 ----------
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
@@ -239,7 +239,12 @@ fi
 # ============================================================
 # PVE 宿主段（默认）
 # ============================================================
-CTID="${1:?用法: bash onekey-cups.sh <CTID>}"
+CTID=""
+while [ -z "$CTID" ]; do
+  read -p "请输入容器 ID (CTID): " CTID </dev/tty
+  [ -n "$CTID" ] || echo "  CTID 不能为空，请重新输入"
+done
+info "目标 LXC: $CTID"
 
 read -p "LXC 内部署目录 (默认 /mnt/nvme1/appdata/cups): " INSTALL_DIR </dev/tty
 INSTALL_DIR="${INSTALL_DIR:-/mnt/nvme1/appdata/cups}"
